@@ -22,6 +22,21 @@ Develop a modern data warehouse using MySQL to consolidate sale data, enabling a
 
 ------------
 
+
+💡 Implementation Notes & Lessons Learned
+Database Engine: MySQL 8.0
+
+While this script is implemented in MySQL, it is important to note the architectural trade-offs:
+
+Procedures: Although MySQL supports stored procedures, the implementation of complex ETL logic and error handling is much more robust in SQL Server (T-SQL).
+
+Performance: For large-scale data warehousing, SQL Server’s integration services and advanced indexing often provide better performance for "Bronze to Silver" transformations.
+
+Project Context: This script serves as a functional demonstration of the Medallion Architecture. 
+In a production enterprise environment, I would recommend migrating this logic to SQL Server to leverage advanced logging, TRY-CATCH blocks, and automated job scheduling.
+
+------------
+
 ### BI: Analytics and Reporting (Data Analytics)
 
 #### Objective

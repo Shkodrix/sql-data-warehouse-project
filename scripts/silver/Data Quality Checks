@@ -1,0 +1,149 @@
+## 🔍 Silver Layer – Data Quality Checks
+
+Data Quality Checks are executed after the Silver Layer load to ensure
+that cleansed and standardized data meets quality requirements
+before being promoted to the Gold Layer.
+
+The checks validate:
+- primary key uniqueness
+- foreign key completeness
+- business rule consistency
+- date correctness
+- numeric value validity
+- reference data integrity
+
+Any non-zero result returned by these queries indicates
+a data quality issue that must be investigated.
+
+/* =========================================================
+   SILVER LAYER – DATA QUALITY CHECKS
+   Purpose:
+   Validate data quality after Silver Layer transformations.
+   These checks are designed to detect critical data issues
+   before loading data into the Gold Layer.
+   ========================================================= */
+
+-- =========================================================
+-- 1. CUSTOMER DATA QUALITY CHECKS
+-- =========================================================
+
+-- 1.1 Check for NULL customer IDs
+SELECT
+    COUNT(*) AS null_cst_id_cnt
+FROM silver.crm_cust_info
+WHERE cst_id IS NULL;
+
+-- 1.2 Check for duplicate customer IDs
+SELECT
+    cst_id,
+    COUNT(*) AS cnt
+FROM silver.crm_cust_info
+GROUP BY cst_id
+HAVING COUNT(*) > 1;
+
+-- 1.3 Check invalid gender values
+SELECT DISTINCT
+    cst_gndr
+FROM silver.crm_cust_info
+WHERE cst_gndr NOT IN ('Male', 'Female', 'n/a');
+
+-- =========================================================
+-- 2. PRODUCT DATA QUALITY CHECKS
+-- =========================================================
+
+-- 2.1 Check for NULL product keys
+SELECT
+    COUNT(*) AS null_prd_key_cnt
+FROM silver.crm_prd_info
+WHERE prd_key IS NULL;
+
+-- 2.2 Check negative or invalid product costs
+SELECT
+    COUNT(*) AS invalid_prd_cost_cnt
+FROM silver.crm_prd_info
+WHERE prd_cost < 0;
+
+-- 2.3 Check overlapping product validity periods
+SELECT
+    prd_key,
+    COUNT(*) AS overlap_cnt
+FROM silver.crm_prd_info
+GROUP BY prd_key, prd_start_dt
+HAVING COUNT(*) > 1;
+
+-- =========================================================
+-- 3. SALES DATA QUALITY CHECKS
+-- =========================================================
+
+-- 3.1 Check NULL foreign keys
+SELECT
+    COUNT(*) AS null_fk_cnt
+FROM silver.crm_sales_details
+WHERE sls_prd_key IS NULL
+   OR sls_cust_id IS NULL;
+
+-- 3.2 Check invalid sales amounts
+SELECT
+    COUNT(*) AS invalid_sales_cnt
+FROM silver.crm_sales_details
+WHERE sls_sales <= 0;
+
+-- 3.3 Check quantity and price consistency
+SELECT
+    COUNT(*) AS inconsistent_sales_cnt
+FROM silver.crm_sales_details
+WHERE sls_sales != sls_quantity * sls_price;
+
+-- 3.4 Check date logic (order > ship)
+SELECT
+    COUNT(*) AS invalid_date_order_cnt
+FROM silver.crm_sales_details
+WHERE sls_ship_dt < sls_order_dt;
+
+-- =========================================================
+-- 4. ERP CUSTOMER DATA QUALITY CHECKS
+-- =========================================================
+
+-- 4.1 Check future birth dates
+SELECT
+    COUNT(*) AS future_birthdate_cnt
+FROM silver.erp_cust_az12
+WHERE bdate > CURDATE();
+
+-- 4.2 Check invalid gender values
+SELECT DISTINCT
+    gen
+FROM silver.erp_cust_az12
+WHERE gen NOT IN ('Male', 'Female', 'n/a');
+
+-- =========================================================
+-- 5. LOCATION DATA QUALITY CHECKS
+-- =========================================================
+
+-- 5.1 Check NULL customer IDs
+SELECT
+    COUNT(*) AS null_cid_cnt
+FROM silver.erp_loc_a101
+WHERE cid IS NULL;
+
+-- 5.2 Check missing country values
+SELECT
+    COUNT(*) AS missing_country_cnt
+FROM silver.erp_loc_a101
+WHERE centry = 'n/a';
+
+-- =========================================================
+-- 6. REFERENCE DATA QUALITY CHECKS
+-- =========================================================
+
+-- 6.1 Check duplicate reference keys
+SELECT
+    id,
+    COUNT(*) AS cnt
+FROM silver.erp_px_cat_g1v2
+GROUP BY id
+HAVING COUNT(*) > 1;
+
+-- =========================================================
+-- END OF DATA QUALITY CHECKS
+-- =========================================================
